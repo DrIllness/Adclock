@@ -7,11 +7,13 @@ package com.crypt.adclock.alarms;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -66,6 +68,10 @@ public class AlarmsFragment extends DaggerFragment implements AlarmsContract.Vie
     @BindView(R.id.no_alarms_add)
     TextView noAlarmsAddView;
 
+    FloatingActionButton mAddAlarmFab;
+
+    private static final String FAB_VISIBILITY_STATE = "FAB_VISIBILITY_STATE";
+
     @Inject
     public AlarmsFragment() {
     }
@@ -85,6 +91,22 @@ public class AlarmsFragment extends DaggerFragment implements AlarmsContract.Vie
     public void onDestroy() {
         super.onDestroy();
         mPresenter.dropView();
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(FAB_VISIBILITY_STATE, mAddAlarmFab.getVisibility());
+        Log.d("KEK", "Saved state as " + mAddAlarmFab.getVisibility());
+    }
+
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+        if (savedInstanceState != null) {
+            mAddAlarmFab.setVisibility(savedInstanceState.getInt(FAB_VISIBILITY_STATE));
+            Log.d("KEK", "Restored state as " + mAddAlarmFab.getVisibility());
+        }
     }
 
     @Override
@@ -108,11 +130,27 @@ public class AlarmsFragment extends DaggerFragment implements AlarmsContract.Vie
         mAlarmsList.addItemDecoration(new DividerItemDecoration(mAlarmsList.getContext(),
                 DividerItemDecoration.VERTICAL));
 
-        FloatingActionButton fab =
-                (FloatingActionButton) getActivity().findViewById(R.id.add_alarm_fab);
+        mAlarmsList.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+            }
 
-        fab.setImageResource(R.drawable.ic_add);
-        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                if (dy > 0) {
+                    mAddAlarmFab.hide();
+                } else {
+                    mAddAlarmFab.show();
+                }
+            }
+        });
+
+        mAddAlarmFab = getActivity().findViewById(R.id.add_alarm_fab);
+
+        mAddAlarmFab.setImageResource(R.drawable.ic_add);
+        mAddAlarmFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 mPresenter.addNewAlarm();
